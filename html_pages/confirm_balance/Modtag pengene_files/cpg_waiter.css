@@ -1,0 +1,34 @@
+.waiter {
+	border-color: solid 1px black;
+	text-align: center;
+	color: green
+}
+
+.error_status {
+	display: none;
+}
+
+.cpg_error {
+	color: red;
+	text-align: center;
+}
+
+.svg_yes .waiter-icon{background-image:url(/img/merchant/DMR/blocks/icons/waiter-icons/waiter-icons.svg)}
+.svg_no .waiter-icon{background-image:url(/img/merchant/DMR/blocks/icons/waiter-icons/waiter-icons.png)}
+.waiter-icon{display: inline-block;background-repeat:no-repeat}
+.waiter-icon_name_alert{width:62px;height:53px;background-position:0 0}
+.waiter-icon_name_fail{width:65px;height:65px;background-position:-67px 0}
+.waiter-icon_name_load{width:65px;height:65px;background-position:-137px 0}
+.waiter-icon_name_success{width:65px;height:65px;background-position:-207px 0}
+
+.icon_spin_clockwise{-webkit-animation:spin-clockwise 2s infinite linear;-o-animation:spin-clockwise 2s infinite linear;animation:spin-clockwise 2s infinite linear}
+@-webkit-keyframes spin-clockwise{from{-webkit-transform:rotate(0deg);transform:rotate(0deg)}
+to{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}
+@-o-keyframes spin-clockwise{from{-o-transform:rotate(0deg);transform:rotate(0deg)}
+to{-o-transform:rotate(360deg);transform:rotate(360deg)}}
+@keyframes spin-clockwise{from{-webkit-transform:rotate(0deg);-o-transform:rotate(0deg);transform:rotate(0deg)}
+to{-webkit-transform:rotate(360deg);-o-transform:rotate(360deg);transform:rotate(360deg)}}
+
+.body_fixed-width_no{min-width:0;background:transparent}
+.body_fixed-height_no{height:auto}
+.body_position_relative{position:relative}
